@@ -1,5 +1,5 @@
 import os
-import pymysql
+import MySQLdb as pymysql
 from typing import Optional
 
 class DatabaseConfig:
@@ -26,10 +26,12 @@ class DatabaseConnection:
                 host=self.config.host,
                 port=self.config.port,
                 user=self.config.user,
-                password=self.config.password,
-                database=self.config.database,
-                autocommit=True
+                passwd=self.config.password,
+                db=self.config.database,
+                charset='utf8mb4',
+                connect_timeout=10
             )
+            self._connection.autocommit(True)
             return self._connection
         except Exception as e:
             print(f"データベース接続エラー: {e}")

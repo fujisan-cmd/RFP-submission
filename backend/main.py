@@ -16,7 +16,7 @@ app = FastAPI(title="ConceptCraft by tantan API")
 # CORS設定
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Next.jsの開発サーバー
+    allow_origins=["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003"],  # Next.jsの開発サーバー
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -31,23 +31,10 @@ async def health_check():
     return {"status": "OK"}
 
 @app.post("/api/signup", response_model=AuthResponse)
-async def signup(user_data: UserCreate, request: Request):
+async def signup(user_data: UserCreate):
     """新規ユーザー登録"""
     try:
-        client_ip = RateLimiter.get_client_ip(request)
-        
-        # レート制限チェック（サインアップは1時間に3回まで）
-        rate_check = RateLimiter.check_rate_limit(client_ip, "signup", limit=3, window_minutes=60)
-        if not rate_check["allowed"]:
-            raise HTTPException(
-                status_code=429, 
-                detail=f"登録試行回数が制限を超えました。{rate_check['reset_time'].strftime('%H:%M')}以降に再試行してください"
-            )
-        
         result = UserService.create_user(user_data.email, user_data.password)
-        
-        # 試行を記録
-        RateLimiter.record_attempt(client_ip, success=result["success"])
         
         if result["success"]:
             return AuthResponse(message=result["message"])

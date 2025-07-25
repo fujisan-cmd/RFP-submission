@@ -1,15 +1,15 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
 
 class UserCreate(BaseModel):
     """新規登録用のユーザーデータ"""
-    email: EmailStr
+    email: str
     password: str
 
 class UserLogin(BaseModel):
     """ログイン用のユーザーデータ"""
-    email: EmailStr
+    email: str
     password: str
 
 class UserResponse(BaseModel):

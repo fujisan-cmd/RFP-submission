@@ -1,4 +1,4 @@
-import pymysql
+import MySQLdb as pymysql
 import uuid
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any

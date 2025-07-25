@@ -1,4 +1,4 @@
-import pymysql
+import MySQLdb as pymysql
 from datetime import datetime, timedelta
 from typing import Dict, Any
 from database import db_connection
