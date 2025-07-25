@@ -25,6 +25,7 @@ class UserService:
         if not validate_password(password):
             return {"success": False, "message": "パスワードは半角英数字および記号(!#$%^&*)を含む8文字以上で入力してください。記号は必須です。"}
         
+        cursor = None
         try:
             conn = db_connection.get_connection()
             cursor = conn.cursor()
@@ -61,6 +62,7 @@ class UserService:
     @staticmethod
     def authenticate_user(email: str, password: str) -> Dict[str, Any]:
         """ユーザー認証"""
+        cursor = None
         try:
             conn = db_connection.get_connection()
             cursor = conn.cursor(pymysql.cursors.DictCursor)
@@ -108,6 +110,7 @@ class UserService:
     @staticmethod
     def get_user_by_id(user_id: int) -> Optional[Dict[str, Any]]:
         """ユーザーIDからユーザー情報を取得"""
+        cursor = None
         try:
             conn = db_connection.get_connection()
             cursor = conn.cursor(pymysql.cursors.DictCursor)
@@ -137,6 +140,7 @@ class UserService:
     @staticmethod
     def _increment_failed_login(user_id: int):
         """ログイン失敗回数を増加"""
+        cursor = None
         try:
             conn = db_connection.get_connection()
             cursor = conn.cursor()
@@ -165,6 +169,7 @@ class UserService:
     @staticmethod
     def _reset_failed_login(user_id: int):
         """ログイン失敗回数をリセット"""
+        cursor = None
         try:
             conn = db_connection.get_connection()
             cursor = conn.cursor()
@@ -183,6 +188,7 @@ class UserService:
     @staticmethod
     def _update_last_login(user_id: int):
         """最終ログイン時刻を更新"""
+        cursor = None
         try:
             conn = db_connection.get_connection()
             cursor = conn.cursor()
@@ -205,6 +211,7 @@ class SessionService:
     @staticmethod
     def create_session(user_id: int) -> str:
         """新しいセッションを作成"""
+        cursor = None
         try:
             conn = db_connection.get_connection()
             cursor = conn.cursor()
@@ -236,6 +243,7 @@ class SessionService:
     @staticmethod
     def validate_session(session_id: str) -> Optional[int]:
         """セッションを検証し、ユーザーIDを返す"""
+        cursor = None
         try:
             conn = db_connection.get_connection()
             cursor = conn.cursor(pymysql.cursors.DictCursor)
@@ -267,6 +275,7 @@ class SessionService:
     @staticmethod
     def invalidate_session(session_id: str):
         """セッションを無効化"""
+        cursor = None
         try:
             conn = db_connection.get_connection()
             cursor = conn.cursor()

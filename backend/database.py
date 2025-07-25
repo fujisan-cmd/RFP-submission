@@ -28,7 +28,6 @@ class DatabaseConnection:
                 user=self.config.user,
                 password=self.config.password,
                 database=self.config.database,
-                charset='utf8mb4',
                 autocommit=True
             )
             return self._connection

@@ -2,6 +2,10 @@ from fastapi import FastAPI, HTTPException, Depends, Cookie, Response, Request
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import timedelta
 from typing import Optional
+from dotenv import load_dotenv
+
+# .envファイルを読み込み
+load_dotenv()
 
 from models import UserCreate, UserLogin, AuthResponse, ErrorResponse, UserResponse
 from user_service import UserService, SessionService
@@ -29,25 +33,33 @@ async def health_check():
 @app.post("/api/signup", response_model=AuthResponse)
 async def signup(user_data: UserCreate, request: Request):
     """新規ユーザー登録"""
-    client_ip = RateLimiter.get_client_ip(request)
-    
-    # レート制限チェック（サインアップは1時間に3回まで）
-    rate_check = RateLimiter.check_rate_limit(client_ip, "signup", limit=3, window_minutes=60)
-    if not rate_check["allowed"]:
-        raise HTTPException(
-            status_code=429, 
-            detail=f"登録試行回数が制限を超えました。{rate_check['reset_time'].strftime('%H:%M')}以降に再試行してください"
-        )
-    
-    result = UserService.create_user(user_data.email, user_data.password)
-    
-    # 試行を記録
-    RateLimiter.record_attempt(client_ip, success=result["success"])
-    
-    if result["success"]:
-        return AuthResponse(message=result["message"])
-    else:
-        raise HTTPException(status_code=400, detail=result["message"])
+    try:
+        client_ip = RateLimiter.get_client_ip(request)
+        
+        # レート制限チェック（サインアップは1時間に3回まで）
+        rate_check = RateLimiter.check_rate_limit(client_ip, "signup", limit=3, window_minutes=60)
+        if not rate_check["allowed"]:
+            raise HTTPException(
+                status_code=429, 
+                detail=f"登録試行回数が制限を超えました。{rate_check['reset_time'].strftime('%H:%M')}以降に再試行してください"
+            )
+        
+        result = UserService.create_user(user_data.email, user_data.password)
+        
+        # 試行を記録
+        RateLimiter.record_attempt(client_ip, success=result["success"])
+        
+        if result["success"]:
+            return AuthResponse(message=result["message"])
+        else:
+            raise HTTPException(status_code=400, detail=result["message"])
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Signup error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"サーバーエラーが発生しました: {str(e)}")
 
 @app.post("/api/login", response_model=AuthResponse)
 async def login(user_data: UserLogin, response: Response, request: Request):

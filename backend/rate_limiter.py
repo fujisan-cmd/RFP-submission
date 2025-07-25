@@ -20,6 +20,7 @@ class RateLimiter:
         Returns:
             {"allowed": bool, "remaining": int, "reset_time": datetime}
         """
+        cursor = None
         try:
             conn = db_connection.get_connection()
             cursor = conn.cursor(pymysql.cursors.DictCursor)
@@ -70,6 +71,7 @@ class RateLimiter:
             user_id: ユーザーID（存在する場合）
             success: 成功フラグ
         """
+        cursor = None
         try:
             conn = db_connection.get_connection()
             cursor = conn.cursor()
