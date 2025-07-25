@@ -16,7 +16,7 @@ app = FastAPI(title="ConceptCraft by tantan API")
 # CORS設定
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003"],  # Next.jsの開発サーバー
+    allow_origins=["http://localhost:3000"],  # Next.jsの開発サーバー
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
