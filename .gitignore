@@ -1,0 +1,39 @@
+# 環境設定ファイル
+.env
+backend/.env
+frontend/.env.local
+
+# データベース関連
+*.db
+*.sqlite
+
+# ログファイル
+*.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

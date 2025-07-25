@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Depends, Cookie, Response, Request
 from fastapi.middleware.cors import CORSMiddleware
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Optional
 from dotenv import load_dotenv
 import logging
@@ -40,7 +40,74 @@ async def read_root():
 
 @app.get("/health")
 async def health_check():
-    return {"status": "OK"}
+    """基本ヘルスチェック"""
+    return {"status": "OK", "service": "ConceptCraft API"}
+
+@app.get("/health/detailed")
+async def detailed_health_check():
+    """詳細ヘルスチェック - データベース接続も含む"""
+    health_status = {
+        "status": "OK",
+        "service": "ConceptCraft API",
+        "database": "disconnected",
+        "timestamp": datetime.now().isoformat(),
+        "environment": {
+            "allowed_origins": allowed_origins,
+            "db_host": os.getenv("DB_HOST", "localhost"),
+            "db_name": os.getenv("DB_NAME", "tantan_app")
+        }
+    }
+    
+    try:
+        from database import db_connection
+        conn = db_connection.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1")
+        cursor.fetchone()
+        health_status["database"] = "connected"
+        logger.info("Database health check: OK")
+    except Exception as e:
+        health_status["database"] = f"error: {str(e)}"
+        health_status["status"] = "DEGRADED"
+        logger.error(f"Database health check failed: {e}")
+    
+    return health_status
+
+@app.get("/debug/info")
+async def debug_info():
+    """デバッグ情報（センシティブ情報は除外）"""
+    import sys
+    import platform
+    
+    return {
+        "python_version": sys.version,
+        "platform": platform.platform(),
+        "fastapi_version": "0.104.1",
+        "environment_vars": {
+            "ALLOWED_ORIGINS": os.getenv("ALLOWED_ORIGINS", "not_set"),
+            "DB_HOST": os.getenv("DB_HOST", "not_set"),
+            "DB_NAME": os.getenv("DB_NAME", "not_set"),
+            "ENVIRONMENT": os.getenv("ENVIRONMENT", "not_set")
+        },
+        "current_working_directory": os.getcwd()
+    }
+
+@app.post("/api/signup/simple")
+async def simple_signup(request: Request):
+    """シンプルな新規登録テスト（フォールバック用）"""
+    try:
+        body = await request.json()
+        email = body.get("email")
+        password = body.get("password")
+        
+        if not email or not password:
+            return {"success": False, "message": "メールアドレスとパスワードが必要です"}
+        
+        logger.info(f"Simple signup attempt: {email}")
+        return {"success": True, "message": "シンプル登録テスト成功", "email": email}
+    except Exception as e:
+        logger.error(f"Simple signup error: {e}")
+        return {"success": False, "message": f"エラー: {str(e)}"}
 
 @app.post("/api/signup", response_model=AuthResponse)
 async def signup(user_data: UserCreate, request: Request):
@@ -49,7 +116,12 @@ async def signup(user_data: UserCreate, request: Request):
     logger.info(f"Signup attempt from {client_ip} for email: {user_data.email}")
     
     try:
+        # 詳細ログ
+        logger.info(f"Starting user creation process for: {user_data.email}")
+        logger.info(f"UserService class available: {UserService is not None}")
+        
         result = UserService.create_user(user_data.email, user_data.password)
+        logger.info(f"UserService.create_user returned: {result}")
         
         if result["success"]:
             logger.info(f"Successful signup for email: {user_data.email}")
@@ -59,8 +131,14 @@ async def signup(user_data: UserCreate, request: Request):
             raise HTTPException(status_code=400, detail=result["message"])
     except HTTPException:
         raise
+    except ImportError as e:
+        logger.error(f"Import error in signup: {e}")
+        import traceback
+        logger.error(f"Import traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail="モジュール読み込みエラーが発生しました")
     except Exception as e:
         logger.error(f"Signup error for {user_data.email}: {str(e)}")
+        logger.error(f"Error type: {type(e).__name__}")
         import traceback
         logger.error(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"サーバーエラーが発生しました: {str(e)}")

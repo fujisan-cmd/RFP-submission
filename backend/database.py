@@ -1,5 +1,5 @@
 import os
-import MySQLdb as pymysql
+import pymysql
 from typing import Optional
 
 class DatabaseConfig:
