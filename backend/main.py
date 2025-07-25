@@ -3,9 +3,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from datetime import timedelta
 from typing import Optional
 from dotenv import load_dotenv
+import logging
+import os
 
 # .envファイルを読み込み
 load_dotenv()
+
+# ログ設定
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 from models import UserCreate, UserLogin, AuthResponse, ErrorResponse, UserResponse
 from user_service import UserService, SessionService
@@ -13,10 +22,13 @@ from rate_limiter import RateLimiter
 
 app = FastAPI(title="ConceptCraft by tantan API")
 
-# CORS設定
+# CORS設定（環境変数から取得、デフォルト値設定）
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001").split(",")
+logger.info(f"CORS allowed origins: {allowed_origins}")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Next.jsの開発サーバー
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -31,21 +43,26 @@ async def health_check():
     return {"status": "OK"}
 
 @app.post("/api/signup", response_model=AuthResponse)
-async def signup(user_data: UserCreate):
+async def signup(user_data: UserCreate, request: Request):
     """新規ユーザー登録"""
+    client_ip = request.client.host if request.client else "unknown"
+    logger.info(f"Signup attempt from {client_ip} for email: {user_data.email}")
+    
     try:
         result = UserService.create_user(user_data.email, user_data.password)
         
         if result["success"]:
+            logger.info(f"Successful signup for email: {user_data.email}")
             return AuthResponse(message=result["message"])
         else:
+            logger.warning(f"Failed signup for email: {user_data.email} - {result['message']}")
             raise HTTPException(status_code=400, detail=result["message"])
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Signup error: {e}")
+        logger.error(f"Signup error for {user_data.email}: {str(e)}")
         import traceback
-        traceback.print_exc()
+        logger.error(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"サーバーエラーが発生しました: {str(e)}")
 
 @app.post("/api/login", response_model=AuthResponse)
